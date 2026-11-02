@@ -1,0 +1,6 @@
+{
+  "appId": "vn.thpt.englishai",
+  "appName": "THPT English AI",
+  "webDir": "www",
+  "android": { "allowMixedContent": false }
+}

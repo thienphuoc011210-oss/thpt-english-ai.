@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3f51b5">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>THPT English AI</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#1d2433;--mute:#6b7488;--pri:#3f51b5;--pri2:#5c6bc0;--ok:#2e9e6a;--bad:#d64545;--warn:#e0a020;--line:#e3e7f0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{position:sticky;top:0;z-index:5;background:var(--pri);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:17px;margin:0;font-weight:700}
+header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;padding:6px 10px;font-size:18px}
+main{max-width:600px;margin:0 auto;padding:14px 14px 100px}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(20,30,60,.07)}
+.card h2{font-size:16px;margin:0 0 8px}
+.mute{color:var(--mute);font-size:13px}
+.btn{display:inline-block;border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:600;background:var(--pri);color:#fff;cursor:pointer}
+.btn.sec{background:#e8ebf7;color:var(--pri)}
+.btn.ok{background:var(--ok)}.btn.bad{background:var(--bad)}
+.btn.block{display:block;width:100%;margin-top:8px}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.opt{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;font-size:15px;color:var(--ink)}
+.opt.sel{border-color:var(--pri);background:#eef0fb}
+.opt.right{border-color:var(--ok);background:#e8f6ef}
+.opt.wrong{border-color:var(--bad);background:#fdeded}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:6}
+nav button{flex:1;background:none;border:0;padding:8px 0 6px;font-size:11px;color:var(--mute)}
+nav button span{display:block;font-size:20px}
+nav button.on{color:var(--pri);font-weight:700}
+.bar{height:10px;background:#e8ebf3;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pri2),var(--pri));border-radius:6px}
+.big{font-size:44px;font-weight:800;color:var(--pri);line-height:1}
+.tag{display:inline-block;background:#e8ebf7;color:var(--pri);border-radius:8px;padding:2px 8px;font-size:12px;font-weight:600}
+textarea,input[type=text],input[type=password]{width:100%;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:15px;font-family:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:150px;resize:vertical}
+.w-ok{background:#d9f2e5;border-radius:5px;padding:0 3px}.w-bad{background:#fbdcdc;border-radius:5px;padding:0 3px;text-decoration:line-through}
+.rec{width:78px;height:78px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-size:30px;box-shadow:0 4px 12px rgba(214,69,69,.4)}
+.rec.live{animation:pulse 1s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(214,69,69,.5)}100%{box-shadow:0 0 0 22px rgba(214,69,69,0)}}
+ul.fb{padding-left:18px;margin:6px 0}
+ul.fb li{margin:4px 0}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#1d2433;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90%;text-align:center}
+.center{text-align:center}
+.ai{border-left:4px solid var(--pri);background:#f3f5ff;border-radius:10px;padding:10px 12px;margin-top:10px}
+</style>
+</head>
+<body>
+<header><h1>🎓 THPT English AI</h1><button onclick="openSettings()" aria-label="Cài đặt">⚙️</button></header>
+<main id="app"></main>
+<nav id="nav"></nav>
+
+<script>
+/* ============ Dữ liệu bài học ============ */
+const VOCAB=[
+// Mức 1
+{w:'environment',vi:'môi trường',ex:'We must protect the environment.',lv:1},
+{w:'pollution',vi:'sự ô nhiễm',ex:'Air pollution is a big problem in many cities.',lv:1},
+{w:'education',vi:'giáo dục',ex:'Education helps young people build a better future.',lv:1},
+{w:'volunteer',vi:'tình nguyện viên',ex:'She works as a volunteer at the children hospital.',lv:1},
+{w:'community',vi:'cộng đồng',ex:'The community cleaned the beach together.',lv:1},
+{w:'benefit',vi:'lợi ích',ex:'Reading has many benefits.',lv:1},
+{w:'advice',vi:'lời khuyên',ex:'My teacher gave me useful advice.',lv:1},
+{w:'improve',vi:'cải thiện',ex:'I practise every day to improve my English.',lv:1},
+{w:'popular',vi:'phổ biến, được ưa chuộng',ex:'Football is popular in Viet Nam.',lv:1},
+{w:'healthy',vi:'khỏe mạnh, lành mạnh',ex:'Eating vegetables is healthy.',lv:1},
+{w:'traditional',vi:'truyền thống',ex:'Ao dai is a traditional dress.',lv:1},
+{w:'festival',vi:'lễ hội',ex:'We watch fireworks at the festival.',lv:1},
+{w:'culture',vi:'văn hóa',ex:'Every country has its own culture.',lv:1},
+{w:'invite',vi:'mời',ex:'I want to invite you to my party.',lv:1},
+{w:'borrow',vi:'mượn',ex:'Can I borrow your dictionary?',lv:1},
+{w:'surprise',vi:'sự ngạc nhiên',ex:'The gift was a big surprise.',lv:1},
+{w:'expensive',vi:'đắt đỏ',ex:'This laptop is too expensive for me.',lv:1},
+{w:'comfortable',vi:'thoải mái',ex:'This chair is very comfortable.',lv:1},
+// Mức 2
+{w:'sustainable',vi:'bền vững',ex:'We need sustainable energy sources.',lv:2},
+{w:'ecosystem',vi:'hệ sinh thái',ex:'Pollution damages the ecosystem.',lv:2},
+{w:'awareness',vi:'nhận thức',ex:'The campaign raises awareness of climate change.',lv:2},
+{w:'opportunity',vi:'cơ hội',ex:'Studying abroad is a great opportunity.',lv:2},
+{w:'experience',vi:'kinh nghiệm, trải nghiệm',ex:'Volunteering gave me valuable experience.',lv:2},
+{w:'achieve',vi:'đạt được',ex:'She worked hard to achieve her goal.',lv:2},
+{w:'technology',vi:'công nghệ',ex:'Technology has changed the way we learn.',lv:2},
+{w:'communicate',vi:'giao tiếp',ex:'English helps us communicate with people worldwide.',lv:2},
+{w:'independent',vi:'độc lập',ex:'Teenagers want to become independent.',lv:2},
+{w:'pressure',vi:'áp lực',ex:'Students feel pressure before exams.',lv:2},
+{w:'scholarship',vi:'học bổng',ex:'He won a scholarship to study in Australia.',lv:2},
+{w:'generation',vi:'thế hệ',ex:'The older generation has a lot to teach us.',lv:2},
+{w:'tourism',vi:'ngành du lịch',ex:'Tourism creates many jobs.',lv:2},
+{w:'protect',vi:'bảo vệ',ex:'We should protect endangered animals.',lv:2},
+{w:'recycle',vi:'tái chế',ex:'Please recycle plastic bottles.',lv:2},
+{w:'deadline',vi:'hạn chót',ex:'The deadline for the project is Friday.',lv:2},
+{w:'career',vi:'sự nghiệp',ex:'She dreams of a career in medicine.',lv:2},
+{w:'require',vi:'yêu cầu, đòi hỏi',ex:'This job requires good English skills.',lv:2},
+// Mức 3
+{w:'significant',vi:'đáng kể, quan trọng',ex:'There was a significant increase in prices.',lv:3},
+{w:'contribute',vi:'đóng góp',ex:'Everyone should contribute to the community.',lv:3},
+{w:'consequence',vi:'hậu quả',ex:'Floods are a consequence of climate change.',lv:3},
+{w:'eliminate',vi:'loại bỏ',ex:'We cannot eliminate pollution overnight.',lv:3},
+{w:'enhance',vi:'nâng cao, tăng cường',ex:'Reading can enhance your vocabulary.',lv:3},
+{w:'preserve',vi:'bảo tồn, gìn giữ',ex:'We must preserve our cultural heritage.',lv:3},
+{w:'urbanization',vi:'đô thị hóa',ex:'Urbanization causes traffic congestion.',lv:3},
+{w:'unemployment',vi:'nạn thất nghiệp',ex:'Unemployment is rising in some regions.',lv:3},
+{w:'inevitable',vi:'không thể tránh khỏi',ex:'Change is inevitable.',lv:3},
+{w:'substantial',vi:'đáng kể, lớn',ex:'The company made a substantial profit.',lv:3},
+{w:'sophisticated',vi:'tinh vi, phức tạp',ex:'Modern phones are sophisticated devices.',lv:3},
+{w:'mitigate',vi:'giảm thiểu',ex:'Trees help mitigate the effects of heat.',lv:3},
+{w:'deteriorate',vi:'xấu đi, suy giảm',ex:'The air quality has deteriorated rapidly.',lv:3},
+{w:'comprehensive',vi:'toàn diện',ex:'We need a comprehensive plan.',lv:3},
+{w:'compulsory',vi:'bắt buộc',ex:'Education is compulsory until the age of fifteen.',lv:3},
+{w:'controversy',vi:'cuộc tranh cãi',ex:'The new law caused great controversy.',lv:3},
+{w:'diversity',vi:'sự đa dạng',ex:'Cultural diversity makes a society richer.',lv:3},
+{w:'indispensable',vi:'không thể thiếu',ex:'The internet is indispensable in modern life.',lv:3}
+];
+
+const LISTEN=[
+{lv:1,t:'My name is Linh. I am sixteen years old. I live in Can Tho with my parents and my younger brother. Every morning I ride my bike to school. I like English because my teacher is very kind.',
+ qs:[{q:'How does Linh go to school?',o:['By bus','By bike','On foot','By motorbike'],a:1},{q:'Why does Linh like English?',o:['It is easy','She has many friends','Her teacher is kind','She likes music'],a:2}]},
+{lv:1,t:'Tomorrow is Saturday. Nam and his friends are going to clean the park near their school. They will meet at seven o\'clock in front of the gate. They need gloves and plastic bags.',
+ qs:[{q:'What will Nam and his friends do?',o:['Play football','Clean the park','Visit a museum','Go shopping'],a:1},{q:'What time will they meet?',o:['6:00','7:00','8:00','9:00'],a:1}]},
+{lv:1,t:'The school library opens at seven thirty and closes at five. Students can borrow up to three books for two weeks. If they keep a book longer, they must pay a small fine.',
+ qs:[{q:'How many books can a student borrow?',o:['One','Two','Three','Five'],a:2},{q:'What happens if a student keeps a book too long?',o:['They pay a fine','They lose the card','Nothing','They must write a report'],a:0}]},
+{lv:2,t:'Many students feel stressed before important exams. Experts suggest sleeping at least eight hours, eating healthy food, and taking short breaks while studying. They also advise talking to friends or family instead of keeping worries inside.',
+ qs:[{q:'What is the passage mainly about?',o:['Choosing a university','Ways to reduce exam stress','Healthy cooking','Sleeping habits of experts'],a:1},{q:'Which is NOT advised by the experts?',o:['Taking short breaks','Eating healthy food','Studying all night','Talking to family'],a:2}]},
+{lv:2,t:'Our school has started a recycling program. Each classroom has three bins for paper, plastic, and glass. Last month, the students collected more than two hundred kilograms of paper. The principal says the money from selling it will buy new books.',
+ qs:[{q:'How many bins are in each classroom?',o:['Two','Three','Four','Five'],a:1},{q:'What will the money be used for?',o:['A school trip','New computers','New books','A party'],a:2}]},
+{lv:2,t:'Every year, thousands of visitors come to the Mekong Delta to see the floating markets. Tourists usually leave early in the morning because the busiest trading time is before eight o\'clock. Local guides advise visitors to bring hats and sunscreen.',
+ qs:[{q:'When is the market busiest?',o:['After noon','Before eight in the morning','At night','At midday'],a:1},{q:'What do guides advise tourists to bring?',o:['Umbrellas and boots','Hats and sunscreen','Jackets','Cameras only'],a:1}]},
+{lv:3,t:'Urbanization has brought many advantages, such as better job opportunities and improved healthcare. However, rapid growth in cities also leads to traffic congestion, air pollution, and a shortage of affordable housing. Urban planners believe that investing in public transport is one of the most effective solutions.',
+ qs:[{q:'According to urban planners, what is an effective solution?',o:['Building more roads','Investing in public transport','Limiting healthcare','Moving factories into cities'],a:1},{q:'Which problem is mentioned in the passage?',o:['Low salaries','Lack of schools','Shortage of affordable housing','Water shortage'],a:2}]},
+{lv:3,t:'Artificial intelligence is changing the way students learn. Personalized programs can identify a student\'s weaknesses and suggest suitable exercises. Nevertheless, teachers warn that over-reliance on technology may reduce students\' critical thinking and creativity.',
+ qs:[{q:'What can personalized programs do?',o:['Replace teachers','Find weaknesses and suggest exercises','Grade every exam for free','Teach without the internet'],a:1},{q:'What do teachers worry about?',o:['High costs','Less critical thinking and creativity','Slow computers','Too much homework'],a:1}]},
+{lv:3,t:'Although online shopping is convenient, it has raised concerns about the environment. Packaging waste and delivery vehicles produce a substantial amount of carbon emissions. Some companies are now offering reusable packaging to reduce their impact.',
+ qs:[{q:'What causes carbon emissions according to the passage?',o:['Factories only','Packaging waste and delivery vehicles','Shopping malls','Online advertising'],a:1},{q:'What are some companies doing?',o:['Closing online stores','Raising prices','Offering reusable packaging','Stopping deliveries'],a:2}]}
+];
+
+const SPEAK=[
+{lv:1,type:'read',t:'I usually go to school by bike because it is good for my health.'},
+{lv:1,type:'read',t:'My favourite subject is English and I practise it every evening.'},
+{lv:1,type:'talk',p:'Introduce yourself and talk about your favourite subject.',kw:['name','like','subject','because','my']},
+{lv:1,type:'talk',p:'Describe your daily routine.',kw:['morning','usually','go','then','after','evening']},
+{lv:2,type:'read',t:'Protecting the environment is the responsibility of every citizen, especially young people.'},
+{lv:2,type:'read',t:'Learning a foreign language gives us more opportunities to travel and work abroad.'},
+{lv:2,type:'talk',p:'Talk about a festival in your hometown.',kw:['festival','people','traditional','celebrate','food','family']},
+{lv:2,type:'talk',p:'Should students wear uniforms at school? Give reasons.',kw:['uniform','because','students','equal','comfortable','school']},
+{lv:3,type:'read',t:'Technological advances have significantly enhanced the quality of education in many countries.'},
+{lv:3,type:'read',t:'Urbanization brings both substantial benefits and serious consequences for modern society.'},
+{lv:3,type:'talk',p:'Discuss the advantages and disadvantages of social media for teenagers.',kw:['social','media','advantage','disadvantage','however','communicate','addiction']},
+{lv:3,type:'talk',p:'What can be done to reduce pollution in big cities?',kw:['pollution','public','transport','government','reduce','solution']}
+];
+
+const WRITE=[
+{lv:1,p:'Write about 50 words: Describe your best friend.',min:40,kw:['friend','kind','funny','like','tall','school']},
+{lv:1,p:'Write an email (about 50 words) to invite a friend to your birthday party.',min:40,kw:['invite','party','time','place','come','birthday']},
+{lv:2,p:'Write a paragraph (about 100 words): What are the benefits of learning English?',min:80,kw:['english','job','communicate','travel','benefit','future']},
+{lv:2,p:'Write about 100 words: Should students use smartphones at school? Give your opinion.',min:80,kw:['smartphone','school','learn','distract','however','students']},
+{lv:3,p:'Write an essay (about 150 words): Some people think online learning will replace traditional classrooms. Do you agree or disagree?',min:120,kw:['online','classroom','teacher','agree','however','advantage','students']},
+{lv:3,p:'Write about 150 words: What are the causes of traffic congestion in big cities and what are some solutions?',min:120,kw:['traffic','public','transport','solution','cause','government','congestion']}
+];
+
+const PLACE=[
+{lv:1,q:'She ___ to school every day.',o:['goes','go','going','gone'],a:0},
+{lv:1,q:'There ___ two books on the table.',o:['is','are','be','am'],a:1},
+{lv:1,q:'I am interested ___ music.',o:['on','at','in','of'],a:2},
+{lv:1,q:'My brother is ___ than me.',o:['tall','taller','tallest','more tall'],a:1},
+{lv:2,q:'If it rains tomorrow, we ___ at home.',o:['stay','would stay','will stay','stayed'],a:2},
+{lv:2,q:'This book ___ by millions of people.',o:['has read','has been read','is reading','reads'],a:1},
+{lv:2,q:'She suggested ___ to the museum.',o:['to go','go','went','going'],a:3},
+{lv:3,q:'Hardly ___ the house when it started to rain.',o:['she had left','had she left','did she leave','she left'],a:1},
+{lv:3,q:'The government must ___ measures to reduce unemployment.',o:['do','make','take','get'],a:2},
+{lv:3,q:'Not only ___ the exam, but she also won a scholarship.',o:['she passed','passed she','she did pass','did she pass'],a:3}
+];
+
+/* ============ Trạng thái ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SK={vocab:'Từ vựng',listen:'Nghe',speak:'Nói',write:'Viết'};
+const ICON={vocab:'📚',listen:'🎧',speak:'🎤',write:'✍️'};
+const LVN={1:'Cơ bản',2:'Trung bình',3:'Nâng cao'};
+const DEF={name:'',placed:false,lv:{vocab:1,listen:1,speak:1,write:1},srs:{},hist:[],apiKey:'',model:'gemini-2.5-flash',streak:0,last:'',xp:0,seen:{}};
+let S=load();
+function load(){try{const o=JSON.parse(localStorage.getItem('thpt_english_ai')||'{}');return Object.assign(JSON.parse(JSON.stringify(DEF)),o)}catch(e){return JSON.parse(JSON.stringify(DEF))}}
+function save(){try{localStorage.setItem('thpt_english_ai',JSON.stringify(S))}catch(e){}}
+const lvl=k=>Math.max(1,Math.min(3,Math.floor(S.lv[k])));
+const dayStr=d=>{const x=new Date(d);return x.getFullYear()+'-'+(x.getMonth()+1)+'-'+x.getDate()};
+function touchStreak(){const t=dayStr(Date.now());if(S.last===t)return;const y=dayStr(Date.now()-864e5);S.streak=(S.last===y)?S.streak+1:1;S.last=t}
+function record(skill,score){
+  S.lv[skill]=Math.max(1,Math.min(3.99,S.lv[skill]+(score-0.6)*0.5));
+  S.hist.push({t:Date.now(),skill,score:Math.round(score*100)/100,lv:lvl(skill)});
+  S.hist=S.hist.slice(-300);S.xp+=Math.round(score*10)+2;touchStreak();save();
+}
+function recentAvg(skill){const h=S.hist.filter(x=>x.skill===skill).slice(-5);return h.length?h.reduce((a,b)=>a+b.score,0)/h.length:null}
+function pick(arr,key){ // chọn bài chưa làm gần đây
+  const seen=S.seen[key]||[];let pool=arr.filter(x=>!seen.includes(arr.indexOf(x)));
+  if(!pool.length){S.seen[key]=[];pool=arr}
+  const it=pool[Math.floor(Math.random()*pool.length)];
+  S.seen[key]=(S.seen[key]||[]).concat(arr.indexOf(it));save();return it;
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3200)}
+
+/* ============ Giọng đọc / micro ============ */
+function speak(text,rate){
+  if(!('speechSynthesis' in window)){toast('Thiết bị không hỗ trợ đọc giọng nói');return}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=rate||1;
+  const v=speechSynthesis.getVoices().find(v=>/en[-_]US/i.test(v.lang))||speechSynthesis.getVoices().find(v=>/^en/i.test(v.lang));
+  if(v)u.voice=v;speechSynthesis.speak(u);
+}
+let rec=null;
+function setRecUI(on){const b=$('#recbtn');if(!b)return;b.classList.toggle('live',on);b.textContent=on?'⏹':'🎤';const s=$('#recst');if(s)s.textContent=on?'Đang nghe... bấm để dừng':'Bấm micro để nói'}
+function toggleRec(){
+  if(rec){try{rec.stop()}catch(e){}rec=null;return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Thiết bị chưa hỗ trợ nhận giọng nói. Hãy gõ nội dung bạn nói vào ô bên dưới.');return}
+  const r=new SR();r.lang='en-US';r.interimResults=true;r.continuous=true;
+  let fin=$('#tx').value?$('#tx').value.trim()+' ':'';
+  r.onresult=e=>{let it='';for(let i=e.resultIndex;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)fin+=x[0].transcript+' ';else it+=x[0].transcript}$('#tx').value=fin+it};
+  r.onerror=e=>{toast('Lỗi micro: '+e.error+(e.error==='not-allowed'?' (hãy cấp quyền micro)':''));rec=null;setRecUI(false)};
+  r.onend=()=>{rec=null;setRecUI(false)};
+  try{r.start();rec=r;setRecUI(true)}catch(e){toast('Không bật được micro')}
+}
+
+/* ============ AI chấm điểm (tuỳ chọn, dùng khoá Gemini của bạn) ============ */
+async function aiGrade(kind,task,answer,lv){
+  if(!S.apiKey)return null;
+  const guide={speak:'bài NÓI (lời nói đã được chuyển thành văn bản nên đừng trừ điểm chính tả/dấu câu; đánh giá phát âm gián tiếp qua từ bị nhận sai nếu có, độ trôi chảy, từ vựng, ngữ pháp, nội dung)',write:'bài VIẾT (nội dung, bố cục, từ vựng, ngữ pháp, chính tả, liên kết ý)'}[kind];
+  const prompt=`Bạn là giáo viên tiếng Anh THPT tại Việt Nam. Hãy chấm ${guide} của học sinh trình độ mức ${lv}/3 (1 cơ bản, 2 trung bình, 3 nâng cao), thang điểm 10, chấm công bằng và nghiêm túc.\nĐề bài: ${task}\nBài làm: """${answer}"""\nChỉ trả về JSON hợp lệ dạng: {"score":số 0-10,"summary":"nhận xét tổng quát 1-2 câu bằng tiếng Việt","strengths":["..."],"errors":[{"original":"đoạn sai","fix":"sửa lại","why":"giải thích ngắn bằng tiếng Việt"}],"tips":["lời khuyên cải thiện bằng tiếng Việt"],"improved":"phiên bản viết lại tốt hơn (tiếng Anh)"}`;
+  try{
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(S.model)}:generateContent?key=${encodeURIComponent(S.apiKey)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0.3}})});
+    if(!res.ok){const t=await res.text();return {error:'Lỗi API '+res.status+': '+t.slice(0,160)}}
+    const j=await res.json();const txt=j.candidates[0].content.parts[0].text;
+    const o=JSON.parse(txt.replace(/^```json|```$/g,'').trim());o.score=Math.max(0,Math.min(10,Number(o.score)||0));return o;
+  }catch(e){return {error:'Không gọi được AI: '+e.message}}
+}
+function aiHtml(a){
+  if(!a)return `<div class="ai mute">Chưa bật chấm điểm AI. Vào ⚙️ Cài đặt, dán khoá Gemini API (miễn phí) để nhận nhận xét chi tiết từ AI.</div>`;
+  if(a.error)return `<div class="ai" style="border-color:var(--bad)">${esc(a.error)}</div>`;
+  const li=x=>(x||[]).map(i=>`<li>${esc(i)}</li>`).join('');
+  return `<div class="ai"><b>🤖 AI chấm: ${a.score.toFixed(1)}/10</b><p>${esc(a.summary||'')}</p>
+  ${a.strengths&&a.strengths.length?`<b>Điểm tốt</b><ul class="fb">${li(a.strengths)}</ul>`:''}
+  ${a.errors&&a.errors.length?`<b>Lỗi cần sửa</b><ul class="fb">${a.errors.map(e=>`<li><span class="w-bad">${esc(e.original)}</span> → <span class="w-ok">${esc(e.fix)}</span><br><span class="mute">${esc(e.why||'')}</span></li>`).join('')}</ul>`:''}
+  ${a.tips&&a.tips.length?`<b>Lời khuyên</b><ul class="fb">${li(a.tips)}</ul>`:''}
+  ${a.improved?`<b>Bản gợi ý</b><p style="margin:4px 0">${esc(a.improved)}</p>`:''}</div>`;
+}
+
+/* ============ Chấm điểm cục bộ (không cần mạng) ============ */
+const CONN=['because','however','and','but','so','also','firstly','secondly','moreover','therefore','although','for example','in addition','finally','then','besides','while','which','who','if'];
+const tok=s=>(s.toLowerCase().match(/[a-z']+/g)||[]);
+function connCount(text){const t=' '+text.toLowerCase()+' ';return CONN.filter(c=>t.includes(' '+c+' ')||t.includes(' '+c+',')).length}
+function lcsMatch(target,said){ // trả về mảng true/false cho từng từ của target
+  const n=target.length,m=said.length,d=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++)d[i][j]=target[i-1]===said[j-1]?d[i-1][j-1]+1:Math.max(d[i-1][j],d[i][j-1]);
+  const ok=new Array(n).fill(false);let i=n,j=m;
+  while(i>0&&j>0){if(target[i-1]===said[j-1]){ok[i-1]=true;i--;j--}else if(d[i-1][j]>=d[i][j-1])i--;else j--}
+  return ok;
+}
+function gradeFreeText(text,item,lv,kind){
+  const w=tok(text),n=w.length,fb=[];
+  const target=kind==='write'?item.min:[25,40,60][lv-1];
+  const lenS=Math.min(1,n/target);
+  const uniq=new Set(w).size,varS=n?Math.min(1,(uniq/n)/0.62):0;
+  const hits=item.kw.filter(k=>w.includes(k.toLowerCase())||text.toLowerCase().includes(k.toLowerCase())).length;
+  const kwS=Math.min(1,hits/Math.min(item.kw.length,4));
+  const cc=connCount(text),conS=Math.min(1,cc/(lv+1));
+  let mech=1;
+  if(kind==='write'){
+    const sents=text.split(/(?<=[.!?])\s+/).filter(s=>s.trim());
+    const capBad=sents.filter(s=>/^[a-z]/.test(s.trim())).length;
+    if(capBad){mech-=Math.min(.3,capBad*.08);fb.push(`Có ${capBad} câu không viết hoa chữ cái đầu.`)}
+    if(/\bi\b/.test(text.replace(/[.!?]\s*i\b/g,''))&&/(^|[\s,])i(\s|'|,)/.test(text)){mech-=.15;fb.push('Đại từ "I" phải luôn viết hoa.')}
+    if(text.trim()&&!/[.!?]$/.test(text.trim())){mech-=.1;fb.push('Câu cuối chưa có dấu chấm câu.')}
+    const rep=text.match(/\b(\w+)\s+\1\b/i);if(rep){mech-=.1;fb.push(`Lặp từ "${rep[1]}" liên tiếp.`)}
+    if(/ ,| \./.test(text)){mech-=.05;fb.push('Có khoảng trắng thừa trước dấu câu.')}
+    const avg=sents.length?n/sents.length:0;
+    if(lv>=2&&avg<8){mech-=.1;fb.push('Câu còn ngắn, hãy dùng câu ghép/câu phức (because, although, which...).')}
+    if(lv>=3&&sents.length<5){fb.push('Bài nâng cao nên có mở bài, 2 ý chính và kết luận.')}
+    mech=Math.max(0,mech);
+  }
+  let sc=kind==='write'?(.25*lenS+.15*varS+.2*kwS+.15*conS+.25*mech):(.35*lenS+.2*varS+.25*kwS+.2*conS);
+  if(n<5)sc=Math.min(sc,.1);
+  if(lenS<1)fb.unshift(`Độ dài: ${n}/${target} từ — hãy viết/nói dài hơn.`);else fb.unshift(`Độ dài tốt (${n} từ).`);
+  fb.push(hits>=Math.min(item.kw.length,4)?'Bám sát chủ đề tốt.':`Dùng thêm từ khóa theo chủ đề: ${item.kw.slice(0,5).join(', ')}.`);
+  fb.push(cc>=lv+1?'Dùng từ nối tốt.':'Dùng thêm từ nối (because, however, moreover, for example...).');
+  if(varS<.7)fb.push('Từ vựng còn lặp, hãy đa dạng hóa từ ngữ.');
+  return {score:sc,fb};
+}
+
+/* ============ Giao diện chung ============ */
+let tab='home';
+const TABS=[['home','🏠','Hôm nay'],['vocab','📚','Từ vựng'],['listen','🎧','Nghe'],['speak','🎤','Nói'],['write','✍️','Viết']];
+function drawNav(){$('#nav').innerHTML=TABS.map(t=>`<button class="${tab===t[0]?'on':''}" onclick="go('${t[0]}')"><span>${t[1]}</span>${t[2]}</button>`).join('')}
+function go(t){if(rec){try{rec.stop()}catch(e){}rec=null}if('speechSynthesis' in window)speechSynthesis.cancel();tab=t;drawNav();window.scrollTo(0,0);({home:viewHome,vocab:viewVocab,listen:viewListen,speak:viewSpeak,write:viewWrite})[t]()}
+const app=h=>{$('#app').innerHTML=h};
+function bar(p){return `<div class="bar"><i style="width:${Math.round(p*100)}%"></i></div>`}
+function resultCard(score10,fbList,extra){
+  const col=score10>=8?'var(--ok)':score10>=5?'var(--warn)':'var(--bad)';
+  return `<div class="card center"><div class="mute">Điểm của bạn</div><div class="big" style="color:${col}">${score10.toFixed(1)}<span style="font-size:20px">/10</span></div></div>
+  <div class="card"><h2>Nhận xét</h2><ul class="fb">${fbList.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>${extra||''}</div>`;
+}
+
+/* ============ Trang chủ + cá nhân hóa ============ */
+function dueWords(){const now=Date.now();return VOCAB.filter(v=>S.srs[v.w]&&S.srs[v.w].next<=now)}
+function viewHome(){
+  if(!S.placed){
+    app(`<div class="card center"><div style="font-size:48px">👋</div><h2>Chào mừng đến THPT English AI</h2>
+    <p class="mute">Làm bài kiểm tra đầu vào 10 câu (~3 phút) để app xác định trình độ và xây dựng lộ trình riêng cho bạn.</p>
+    <input type="text" id="nm" placeholder="Tên của bạn" value="${esc(S.name)}">
+    <button class="btn block" onclick="startPlacement()">Bắt đầu kiểm tra đầu vào</button>
+    <button class="btn sec block" onclick="skipPlacement()">Bỏ qua, bắt đầu từ mức Cơ bản</button></div>`);return;
+  }
+  const skills=Object.keys(SK);
+  const rank=skills.map(k=>{const a=recentAvg(k);return {k,a:a===null?0.6:a,l:S.lv[k]}}).sort((x,y)=>(x.a+x.l*.15)-(y.a+y.l*.15));
+  const due=dueWords().length;
+  const why={vocab:'Từ vựng là nền tảng cho cả 4 kỹ năng.',listen:'Nghe thường xuyên giúp tai quen tốc độ bản xứ.',speak:'Nói cần luyện đều để tự tin khi thi vấn đáp.',write:'Viết giúp củng cố ngữ pháp và từ vựng.'};
+  const plan=rank.slice(0,3).map((r,i)=>`<div class="row" style="justify-content:space-between;margin:10px 0"><div><b>${i+1}. ${ICON[r.k]} ${SK[r.k]}</b> <span class="tag">${LVN[lvl(r.k)]}</span><div class="mute">${r.k==='vocab'&&due?`Có ${due} từ đến hạn ôn lại. `:''}${r.a<.6&&recentAvg(r.k)!==null?'Điểm gần đây còn thấp, cần luyện thêm. ':''}${why[r.k]}</div></div><button class="btn" onclick="go('${r.k}')">Làm</button></div>`).join('');
+  const lv=skills.map(k=>{const p=(S.lv[k]-1)/3,a=recentAvg(k);return `<div style="margin:10px 0"><div class="row" style="justify-content:space-between"><span>${ICON[k]} ${SK[k]}</span><span class="mute">${LVN[lvl(k)]}${a!==null?' · TB gần đây '+(a*10).toFixed(1):''}</span></div>${bar(p)}</div>`}).join('');
+  app(`<div class="card"><h2>Xin chào${S.name?', '+esc(S.name):''}! 👋</h2>
+   <div class="row"><span class="tag">🔥 ${S.streak} ngày liên tiếp</span><span class="tag">⭐ ${S.xp} XP</span><span class="tag">${S.hist.length} bài đã làm</span></div></div>
+   <div class="card"><h2>🎯 Kế hoạch học hôm nay (dành riêng cho bạn)</h2>${plan}<div class="mute">Thứ tự dựa trên điểm gần đây và trình độ từng kỹ năng của bạn. Làm tốt thì độ khó tự tăng, làm kém thì tự giảm.</div></div>
+   <div class="card"><h2>📈 Trình độ hiện tại</h2>${lv}</div>
+   <button class="btn sec block" onclick="startPlacement()">Làm lại bài kiểm tra đầu vào</button>`);
+}
+let PL={i:0,ans:[]};
+function skipPlacement(){S.name=($('#nm')||{}).value||S.name;S.placed=true;save();viewHome()}
+function startPlacement(){S.name=($('#nm')||{}).value||S.name;save();PL={i:0,ans:[]};drawPlacement()}
+function drawPlacement(){
+  if(PL.i>=PLACE.length)return finishPlacement();
+  const q=PLACE[PL.i];
+  app(`<div class="card"><div class="mute">Câu ${PL.i+1}/${PLACE.length}</div>${bar(PL.i/PLACE.length)}<h2 style="margin-top:14px">${esc(q.q)}</h2>
+  ${q.o.map((o,i)=>`<button class="opt" onclick="plAns(${i})">${esc(o)}</button>`).join('')}</div>`);
+}
+function plAns(i){PL.ans.push(i===PLACE[PL.i].a);PL.i++;drawPlacement()}
+function finishPlacement(){
+  const by={1:[0,0],2:[0,0],3:[0,0]};PLACE.forEach((q,i)=>{by[q.lv][1]++;if(PL.ans[i])by[q.lv][0]++});
+  let L=1.2;if(by[1][0]>=3){L=2.0;if(by[2][0]>=2){L=2.5;if(by[3][0]>=2)L=3.1}}
+  if(by[1][0]<3&&by[1][0]>=2)L=1.5;
+  Object.keys(S.lv).forEach(k=>S.lv[k]=L);S.placed=true;save();
+  const tot=PL.ans.filter(Boolean).length;
+  app(`<div class="card center"><div style="font-size:48px">🎉</div><h2>Hoàn thành!</h2><div class="big">${tot}/${PLACE.length}</div>
+  <p>Trình độ xuất phát của bạn: <b>${LVN[Math.floor(L)]}</b></p>
+  <p class="mute">Cơ bản ${by[1][0]}/${by[1][1]} · Trung bình ${by[2][0]}/${by[2][1]} · Nâng cao ${by[3][0]}/${by[3][1]}</p>
+  <button class="btn block" onclick="go('home')">Xem kế hoạch học của tôi</button></div>`);
+}
+
+/* ============ Từ vựng (lặp lại ngắt quãng) ============ */
+let VQ=null;
+const INTERVALS=[0,1,3,7,14,30];
+function viewVocab(){
+  const L=lvl('vocab'),now=Date.now(),due=dueWords();
+  const fresh=shuffle(VOCAB.filter(v=>!S.srs[v.w]&&v.lv<=L)).sort((a,b)=>b.lv-a.lv===0?0:(a.lv===L?-1:1));
+  const queue=shuffle(due).slice(0,5).concat(fresh.slice(0,8-Math.min(5,due.length)));
+  if(!queue.length){app(`<div class="card center"><h2>🎉 Bạn đã học hết từ ở mức hiện tại</h2><p class="mute">Hãy quay lại khi có từ đến hạn ôn, hoặc làm bài khác để lên mức cao hơn.</p></div>`);return}
+  VQ={items:queue,i:0,ok:0,answered:false};drawVocab();
+}
+function drawVocab(){
+  if(VQ.i>=VQ.items.length){
+    const sc=VQ.ok/VQ.items.length;record('vocab',sc);
+    app(`<div class="card center"><h2>Hoàn thành phiên từ vựng</h2><div class="big">${VQ.ok}/${VQ.items.length}</div><p class="mute">Từ sai sẽ xuất hiện lại sớm hơn. Từ đúng sẽ được ôn lại sau 1, 3, 7, 14 ngày.</p><button class="btn block" onclick="viewVocab()">Học tiếp</button><button class="btn sec block" onclick="go('home')">Về trang chủ</button></div>`);return}
+  const v=VQ.items[VQ.i],box=(S.srs[v.w]||{box:0}).box;
+  VQ.mode=box>=2?'type':'mcq';VQ.answered=false;
+  let body;
+  if(VQ.mode==='mcq'){
+    const others=shuffle(VOCAB.filter(x=>x.w!==v.w)).slice(0,3).map(x=>x.vi);
+    VQ.opts=shuffle([v.vi,...others]);
+    body=`<div class="center"><div style="font-size:30px;font-weight:800">${esc(v.w)}</div><button class="btn sec" onclick="speak('${v.w}',.85)">🔊 Nghe</button></div>
+    <div id="opts">${VQ.opts.map((o,i)=>`<button class="opt" onclick="vAns(${i})">${esc(o)}</button>`).join('')}</div>`;
+  }else{
+    const blank=v.ex.replace(new RegExp(v.w,'i'),'_____');
+    body=`<div class="center"><div class="mute">Gõ từ tiếng Anh có nghĩa:</div><div style="font-size:24px;font-weight:800">${esc(v.vi)}</div><div class="mute" style="margin-top:6px">${esc(blank)}</div></div>
+    <input type="text" id="vt" autocapitalize="none" autocomplete="off" style="margin-top:12px" onkeydown="if(event.key==='Enter')vType()"><button class="btn block" onclick="vType()">Kiểm tra</button>`;
+  }
+  app(`<div class="card"><div class="row" style="justify-content:space-between"><span class="mute">Từ ${VQ.i+1}/${VQ.items.length}</span><span class="tag">${LVN[v.lv]}${S.srs[v.w]?' · ôn lại':' · từ mới'}</span></div>${bar(VQ.i/VQ.items.length)}<div style="margin-top:14px">${body}</div><div id="vfb"></div></div>`);
+}
+function vFinish(correct){
+  const v=VQ.items[VQ.i],s=S.srs[v.w]||{box:0};
+  s.box=correct?Math.min(5,s.box+1):0;s.next=Date.now()+INTERVALS[s.box]*864e5+(correct?0:60000);S.srs[v.w]=s;save();
+  if(correct)VQ.ok++;VQ.answered=true;
+  $('#vfb').innerHTML=`<div class="ai"><b>${correct?'✅ Chính xác!':'❌ Chưa đúng'}</b> ${esc(v.w)} = ${esc(v.vi)}<br><i>${esc(v.ex)}</i> <button class="btn sec" style="padding:4px 10px" onclick="speak(${JSON.stringify(v.ex).replace(/"/g,'&quot;')},.9)">🔊</button></div><button class="btn block" onclick="VQ.i++;drawVocab()">Tiếp tục</button>`;
+}
+function vAns(i){if(VQ.answered)return;const v=VQ.items[VQ.i],ok=VQ.opts[i]===v.vi;
+  document.querySelectorAll('#opts .opt').forEach((b,j)=>{b.disabled=true;if(VQ.opts[j]===v.vi)b.classList.add('right');else if(j===i)b.classList.add('wrong')});vFinish(ok)}
+function vType(){if(VQ.answered)return;const v=VQ.items[VQ.i];vFinish($('#vt').value.trim().toLowerCase()===v.w)}
+
+/* ============ Nghe ============ */
+let LQ=null;
+function viewListen(){
+  const L=lvl('listen');const pool=LISTEN.filter(x=>x.lv===L);
+  const it=pick(pool,'listen'+L);LQ={it,ans:[],done:false};drawListen();
+}
+function drawListen(){
+  const it=LQ.it;
+  app(`<div class="card"><div class="row" style="justify-content:space-between"><h2>🎧 Bài nghe</h2><span class="tag">${LVN[it.lv]}</span></div>
+  <p class="mute">Nghe đoạn văn rồi trả lời câu hỏi. Bạn có thể nghe lại nhiều lần.</p>
+  <div class="row"><button class="btn" onclick="speak(LQ.it.t,${[.8,.92,1][it.lv-1]})">▶️ Phát</button><button class="btn sec" onclick="speak(LQ.it.t,.7)">🐢 Chậm</button><button class="btn sec" onclick="speechSynthesis.cancel()">⏹</button></div></div>
+  ${it.qs.map((q,qi)=>`<div class="card"><b>${qi+1}. ${esc(q.q)}</b>${q.o.map((o,oi)=>`<button class="opt" id="l${qi}_${oi}" onclick="lSel(${qi},${oi})">${esc(o)}</button>`).join('')}</div>`).join('')}
+  <button class="btn block" id="lsub" onclick="lSubmit()">Nộp bài</button><div id="lres"></div>`);
+}
+function lSel(q,o){if(LQ.done)return;LQ.ans[q]=o;LQ.it.qs[q].o.forEach((_,i)=>$('#l'+q+'_'+i).classList.toggle('sel',i===o))}
+function lSubmit(){
+  if(LQ.done)return;if(LQ.it.qs.some((_,i)=>LQ.ans[i]===undefined)){toast('Hãy trả lời hết các câu hỏi');return}
+  LQ.done=true;speechSynthesis.cancel();let ok=0;
+  LQ.it.qs.forEach((q,qi)=>{q.o.forEach((_,oi)=>{const b=$('#l'+qi+'_'+oi);b.disabled=true;b.classList.remove('sel');if(oi===q.a)b.classList.add('right');else if(oi===LQ.ans[qi])b.classList.add('wrong')});if(LQ.ans[qi]===q.a)ok++});
+  const sc=ok/LQ.it.qs.length;record('listen',sc);$('#lsub').style.display='none';
+  $('#lres').innerHTML=`<div class="card center"><div class="big">${(sc*10).toFixed(1)}<span style="font-size:20px">/10</span></div><p>Đúng ${ok}/${LQ.it.qs.length} câu</p></div><div class="card"><h2>Bản ghi lời thoại</h2><p>${esc(LQ.it.t)}</p></div><button class="btn block" onclick="viewListen()">Bài nghe tiếp theo</button>`;
+}
+
+/* ============ Nói ============ */
+let SQ=null;
+function viewSpeak(){
+  const L=lvl('speak');const it=pick(SPEAK.filter(x=>x.lv===L),'speak'+L);SQ={it};
+  const read=it.type==='read';
+  app(`<div class="card"><div class="row" style="justify-content:space-between"><h2>🎤 ${read?'Đọc theo câu mẫu':'Nói theo chủ đề'}</h2><span class="tag">${LVN[it.lv]}</span></div>
+  <p style="font-size:18px;font-weight:600">${esc(read?it.t:it.p)}</p>
+  ${read?`<button class="btn sec" onclick="speak(SQ.it.t,.85)">🔊 Nghe mẫu</button>`:`<p class="mute">Hãy nói khoảng ${[25,40,60][it.lv-1]} từ trở lên, dùng từ nối và nêu lý do.</p>`}
+  <div class="center" style="margin:16px 0"><button class="rec" id="recbtn" onclick="toggleRec()">🎤</button><div class="mute" id="recst">Bấm micro để nói</div></div>
+  <textarea id="tx" placeholder="Lời bạn nói sẽ hiện ở đây (bạn có thể sửa hoặc tự gõ nếu máy không hỗ trợ micro)"></textarea>
+  <button class="btn block" id="sbtn" onclick="speakGrade()">Chấm điểm</button></div><div id="sres"></div>`);
+}
+async function speakGrade(){
+  const it=SQ.it,text=$('#tx').value.trim();if(rec){try{rec.stop()}catch(e){}rec=null}
+  if(tok(text).length<2){toast('Hãy nói hoặc gõ nội dung trước');return}
+  $('#sbtn').disabled=true;let html,score;
+  if(it.type==='read'){
+    const t=tok(it.t),said=tok(text),ok=lcsMatch(t,said);const raw=it.t.match(/[A-Za-z']+|[^A-Za-z']+/g)||[];
+    let idx=0;const marked=raw.map(p=>/[A-Za-z']/.test(p)?`<span class="${ok[idx++]?'w-ok':'w-bad'}">${esc(p)}</span>`:esc(p)).join('');
+    const acc=ok.filter(Boolean).length/t.length;score=acc;
+    const bad=t.filter((_,i)=>!ok[i]);
+    const fb=[`Đúng ${ok.filter(Boolean).length}/${t.length} từ (xanh = đúng, đỏ gạch = sai/thiếu).`];
+    if(bad.length)fb.push('Luyện lại các từ: '+[...new Set(bad)].join(', ')+'. Bấm "Nghe mẫu" và nhại theo.');else fb.push('Phát âm rõ, máy nhận đúng toàn bộ câu. Tuyệt vời!');
+    if(said.length>t.length+3)fb.push('Bạn nói thừa từ so với câu mẫu.');
+    fb.push('Lưu ý: điểm dựa trên việc máy nhận ra đúng từ bạn phát âm, nên phản ánh độ rõ ràng của phát âm.');
+    html=resultCard(score*10,fb,`<p style="margin-top:10px">${marked}</p>`);
+  }else{
+    const g=gradeFreeText(text,it,it.lv,'speak');score=g.score;
+    html=resultCard(score*10,g.fb,`<div id="aislot"><div class="ai mute">🤖 AI đang chấm...</div></div>`);
+  }
+  $('#sres').innerHTML=html;$('#sbtn').style.display='none';
+  if(it.type==='talk'){
+    const a=await aiGrade('speak',it.p,text,it.lv);
+    if(a&&!a.error){score=(score+a.score/10)/2}
+    $('#aislot').innerHTML=aiHtml(a);
+  }
+  record('speak',score);
+  $('#sres').insertAdjacentHTML('beforeend','<button class="btn block" onclick="viewSpeak()">Bài nói tiếp theo</button>');
+}
+
+/* ============ Viết ============ */
+let WQ=null;
+function viewWrite(){
+  const L=lvl('write');const it=pick(WRITE.filter(x=>x.lv===L),'write'+L);WQ={it};
+  app(`<div class="card"><div class="row" style="justify-content:space-between"><h2>✍️ Bài viết</h2><span class="tag">${LVN[it.lv]}</span></div>
+  <p style="font-weight:600">${esc(it.p)}</p><textarea id="wt" oninput="$('#wc').textContent=tok(this.value).length" placeholder="Viết bài của bạn bằng tiếng Anh..."></textarea>
+  <div class="mute">Số từ: <span id="wc">0</span> / ${it.min}+</div><button class="btn block" id="wbtn" onclick="writeGrade()">Chấm điểm</button></div><div id="wres"></div>`);
+}
+async function writeGrade(){
+  const it=WQ.it,text=$('#wt').value.trim();if(tok(text).length<5){toast('Bài viết quá ngắn');return}
+  $('#wbtn').disabled=true;const g=gradeFreeText(text,it,it.lv,'write');
+  $('#wres').innerHTML=resultCard(g.score*10,g.fb,`<div id="aislot"><div class="ai mute">🤖 AI đang chấm...</div></div>`);$('#wbtn').style.display='none';
+  const a=await aiGrade('write',it.p,text,it.lv);let score=g.score;if(a&&!a.error)score=(score+a.score/10)/2;
+  $('#aislot').innerHTML=aiHtml(a);record('write',score);
+  $('#wres').insertAdjacentHTML('beforeend','<button class="btn block" onclick="viewWrite()">Đề tiếp theo</button>');
+}
+
+/* ============ Cài đặt ============ */
+function openSettings(){
+  const d=document.createElement('div');d.id='modal';d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:flex;align-items:flex-end;justify-content:center';
+  d.innerHTML=`<div class="card" style="width:100%;max-width:600px;margin:0;border-radius:20px 20px 0 0;max-height:85vh;overflow:auto"><h2>⚙️ Cài đặt</h2>
+  <label class="mute">Tên</label><input type="text" id="sn" value="${esc(S.name)}">
+  <label class="mute" style="display:block;margin-top:10px">Khoá Gemini API (để AI chấm Nói/Viết chi tiết)</label><input type="password" id="sk" value="${esc(S.apiKey)}" placeholder="AIza...">
+  <label class="mute" style="display:block;margin-top:10px">Mô hình</label><input type="text" id="sm" value="${esc(S.model)}">
+  <p class="mute">Khoá chỉ lưu trên máy bạn và gửi thẳng đến Google khi chấm bài. Lấy khoá miễn phí tại aistudio.google.com/apikey. Không có khoá, app vẫn chấm bằng thuật toán trên máy.</p>
+  <button class="btn block" onclick="saveSettings()">Lưu</button><button class="btn bad block" onclick="if(confirm('Xoá toàn bộ tiến độ học?')){localStorage.removeItem('thpt_english_ai');location.reload()}">Xoá dữ liệu học</button>
+  <button class="btn sec block" onclick="$('#modal').remove()">Đóng</button></div>`;
+  document.body.appendChild(d);
+}
+function saveSettings(){S.name=$('#sn').value.trim();S.apiKey=$('#sk').value.trim();S.model=$('#sm').value.trim()||'gemini-2.5-flash';save();$('#modal').remove();toast('Đã lưu');go(tab)}
+
+/* ============ Khởi động ============ */
+if('speechSynthesis' in window)speechSynthesis.getVoices();
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+go('home');
+</script>
+</body>
+</html>
